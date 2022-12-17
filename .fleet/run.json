@@ -1,0 +1,11 @@
+{
+    "configurations": [
+        {
+            "type": "go",
+            "name": "build",
+            "goExecPath": "/usr/local/bin/go",
+            "buildParams": ["app/server.go"],
+        },
+
+    ]
+}
