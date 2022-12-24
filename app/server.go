@@ -16,14 +16,20 @@ func main() {
 	 	os.Exit(1)
      }
      var conn net.Conn
-     conn, err = l.Accept()
-     if err != nil {
-         fmt.Println("Error accepting connection: ", err.Error())
-         os.Exit(1)
-     }
-     var buffer = make([]byte, 100);
-     for {
-         conn.Read(buffer)
-         conn.Write([]byte("+PONG\r\n"))
-     }
+    for {
+        conn, err = l.Accept()
+        if err != nil {
+            fmt.Println("Error accepting connection: ", err.Error())
+            os.Exit(1)
+        }
+        go handleConne(conn)
+    }
+}
+
+func handleConne(conn Conn) {
+    var buffer = make([]byte, 100);
+    for {
+        conn.Read(buffer)
+        conn.Write([]byte("+PONG\r\n"))
+    }
 }
