@@ -47,6 +47,10 @@ func handleConn(conn net.Conn) {
     for {
         var byteCount, err = conn.Read(buffer)
         if err != nil {
+            if err == EOF {
+                fmt.Println("Got EOF")
+                return
+            }
             fmt.Println("Error reading from connection: ", err.Error())
             os.Exit(1)
         }
