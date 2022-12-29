@@ -9,7 +9,7 @@ import (
 )
 
 // *2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n
-var regex = regexp.MustCompile(`^\*2\r\n\$\d+\r\n([A-Z]+)\r\n\$\d+\r\n(.*)\r\n$`)
+var regex = regexp.MustCompile(`^\*2\r\n\$\d+\r\n([a-zA-Z]+)\r\n\$\d+\r\n(.*)\r\n$`)
 
 func main() {
 //    fmt.Println(make([]byte, 100)[:2])
