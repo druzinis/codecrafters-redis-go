@@ -54,6 +54,7 @@ func handleConn(conn net.Conn) {
         var match = regex.FindSubmatch(buffer[:byteCount])
         fmt.Println(buffer)
         fmt.Println(string(buffer[:byteCount]))
+        
         if len(match) > 0 {
 
             var val = regex.FindSubmatch(buffer[:byteCount])[2]
