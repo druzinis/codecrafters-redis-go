@@ -4,6 +4,7 @@ import (
 	"fmt"
 	 "net"
     "os"
+    "io"
     "regexp"
 )
 
@@ -47,7 +48,7 @@ func handleConn(conn net.Conn) {
     for {
         var byteCount, err = conn.Read(buffer)
         if err != nil {
-            if err == EOF {
+            if err == io.EOF {
                 fmt.Println("Got EOF")
                 return
             }
