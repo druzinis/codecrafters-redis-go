@@ -7,19 +7,38 @@ import (
     "io"
     "regexp"
     "strings"
+    "hash/maphash"
+    "sync"
+    "strconv"
+    "time"
 )
 
 type expirable struct {
-    data []byte
+    data *[]byte
     expires bool
-    expiry int
+    expiresAt int64
+}
+
+func createNonexpirable(value *[]byte) *expirable {
+    return &expirable{data: value, expires: false, expiresAt: 0}
+}
+
+func createExpirable(value *[]byte, expiry int64) *expirable {
+    expiresAt := time.Now().Unix() + expiry
+    return &expirable{data: value, expires: true, expiresAt: expiresAt}
 }
 
 // *2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n
 var regex = regexp.MustCompile(`^\*\d\r\n(\$\d+\r\n(.+)\r\n)(\$\d+\r\n(.+)\r\n)(\$\d+\r\n(.+)\r\n)?(\$\d+\r\n(.+)\r\n)?(\$\d+\r\n(.+)\r\n)?$`)
-var m = make(map[string][]byte)
+var m = make(map[string]*expirable)
+var locks [32]*sync.Mutex
 
 func main() {
+    for i, _ := range locks {
+        var m sync.Mutex
+        locks[i] = &m
+    }
+
 	fmt.Println("Starting")
 	 l, err := net.Listen("tcp", "0.0.0.0:6379")
 	 if err != nil {
@@ -66,46 +85,51 @@ func handleConn(conn net.Conn) {
                 conn.Write(send)
             } else if strings.EqualFold("set", command) {
                 var second_arg = match[6]
-                m[string(first_arg)] = second_arg
-                sendPlainString(conn, []byte("OK"))
+                var value *expirable
+                if (len(match[10]) > 0) {
+                    expiry, err := strconv.ParseInt(string(match[10]), 10, 64)
+                    if err != nil {
+                        fmt.Println("Error parsing expiry", match[10], string(match[10]))
+                        value = createNonexpirable(&second_arg)
+                    } else {
+                        value = createExpirable(&second_arg, expiry)
+                    }
+                } else {
+                    value = createNonexpirable(&second_arg)
+                }
+                lock := getLock(&first_arg)
+                lock.Lock()
+                m[string(first_arg)] = value
+                lock.Unlock()
+                conn.Write([]byte("+OK\r\n"))
             } else if strings.EqualFold("get", command) {
 
+                lock := getLock(&first_arg)
+                lock.Lock()
                 value, ok := m[string(first_arg)]
-                if ok {
-                    sendPlainString(conn, value)
+                if ok && value.expires && time.Now().Unix() > value.expiresAt {
+                    delete(m, string(first_arg))
+                    value = nil
+                }
+                lock.Unlock()
+                if value != nil {
+                    sendPlainString(conn, value.data)
                 } else {
                     conn.Write([]byte("$-1\r\n"))
                 }
             }
         }
-//        var string = string(buffer[:byteCount])
-//        var match = regex.FindSubmatch(buffer[:byteCount])
-//        fmt.Println(buffer)
-//        fmt.Println(string(buffer[:byteCount]))
-
-//        if len(match) > 0 {
-//
-//        } else {
-//
-//            conn.Write([]byte("+PONG\r\n"))
-//
-//        }
     }
 }
 
-func sendPlainString(conn net.Conn, data []byte) {
-    var send = append([]byte("+"), data...)
+func getLock(value *[]byte) *sync.Mutex {
+    var h maphash.Hash
+    h.Write(*value)
+    return locks[h.Sum64() % 32]
+}
+
+func sendPlainString(conn net.Conn, data *[]byte) {
+    var send = append([]byte("+"), *data...)
     send = append(send, []byte("\r\n")...)
     conn.Write(send)
 }
-
-//struct RedisCommand {
-//    type RedisCommandType
-//}
-//
-//type RedisCommandType int
-//
-//const (
-//    PING RedisCommandType = []byte('PING')
-//    ECHO = []byte('ECHO')
-//)
