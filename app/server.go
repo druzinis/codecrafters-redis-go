@@ -87,6 +87,7 @@ func handleConn(conn net.Conn) {
                 var second_arg = match[6]
                 var value *expirable
                 if (len(match[10]) > 0) {
+                    // with expiry
                     expiry, err := strconv.ParseInt(string(match[10]), 10, 64)
                     if err != nil {
                         fmt.Println("Error parsing expiry", match[10], string(match[10]))
