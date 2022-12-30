@@ -10,14 +10,14 @@ import (
 )
 
 type expirable struct {
-    data [string]byte
+    data []byte
     expires bool
     expiry int
 }
 
 // *2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n
 var regex = regexp.MustCompile(`^\*\d\r\n(\$\d+\r\n(.+)\r\n)(\$\d+\r\n(.+)\r\n)(\$\d+\r\n(.+)\r\n)?(\$\d+\r\n(.+)\r\n)?(\$\d+\r\n(.+)\r\n)?$`)
-var m = make(map[[]byte][]byte)
+var m = make(map[string][]byte)
 
 func main() {
 //    fmt.Println(make([]byte, 100)[:2])
@@ -81,12 +81,12 @@ func handleConn(conn net.Conn) {
                 var send = append([]byte("+"), first_arg...)
                 send = append(send, []byte("\r\n")...)
                 conn.Write(send)
-            } else if string.EqualFold("set") {
+            } else if strings.EqualFold("set", command) {
                 var second_arg = match[6]
-                m[first_arg] = second_arg
-            } else if string.EqualFold("get") {
+                m[string(first_arg)] = second_arg
+            } else if strings.EqualFold("get", command) {
 
-                value, ok := m[first_arg]
+                value, ok := m[string(first_arg)]
                 if ok {
                     sendPlainString(conn, value)
                 } else {
@@ -95,9 +95,9 @@ func handleConn(conn net.Conn) {
             }
         }
 //        var string = string(buffer[:byteCount])
-        var match = regex.FindSubmatch(buffer[:byteCount])
-        fmt.Println(buffer)
-        fmt.Println(string(buffer[:byteCount]))
+//        var match = regex.FindSubmatch(buffer[:byteCount])
+//        fmt.Println(buffer)
+//        fmt.Println(string(buffer[:byteCount]))
 
 //        if len(match) > 0 {
 //
@@ -110,7 +110,7 @@ func handleConn(conn net.Conn) {
 }
 
 func sendPlainString(conn net.Conn, data []byte) {
-    var send = append([]byte("+"), first_arg...)
+    var send = append([]byte("+"), data...)
     send = append(send, []byte("\r\n")...)
     conn.Write(send)
 }
