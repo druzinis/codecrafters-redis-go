@@ -24,7 +24,7 @@ func createNonexpirable(value *[]byte) *expirable {
 }
 
 func createExpirable(value *[]byte, expiry int64) *expirable {
-    expiresAt := time.Now().Unix() + expiry
+    expiresAt := time.Now().UnixMilli() + expiry
     return &expirable{data: value, expires: true, expiresAt: expiresAt}
 }
 
@@ -107,7 +107,7 @@ func handleConn(conn net.Conn) {
                 lock := getLock(&first_arg)
                 lock.Lock()
                 value, ok := m[string(first_arg)]
-                if ok && value.expires && time.Now().Unix() > value.expiresAt {
+                if ok && value.expires && time.Now().UnixMilli() > value.expiresAt {
                     delete(m, string(first_arg))
                     value = nil
                 }
