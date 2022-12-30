@@ -67,6 +67,7 @@ func handleConn(conn net.Conn) {
             } else if strings.EqualFold("set", command) {
                 var second_arg = match[6]
                 m[string(first_arg)] = second_arg
+                sendPlainString(conn, []byte("OK"))
             } else if strings.EqualFold("get", command) {
 
                 value, ok := m[string(first_arg)]
