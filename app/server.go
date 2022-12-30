@@ -20,31 +20,14 @@ var regex = regexp.MustCompile(`^\*\d\r\n(\$\d+\r\n(.+)\r\n)(\$\d+\r\n(.+)\r\n)(
 var m = make(map[string][]byte)
 
 func main() {
-//    fmt.Println(make([]byte, 100)[:2])
-//    fmt.Println("start")
-//    var match = regexp.MustCompile(`^\*2\r\n\$(\d+)\r\n`).FindSubmatch([]byte("*2\r\n$456\r\n"))
-//    fmt.Println(match[1])
-//    fmt.Println("end")
-//    fmt.Println("start")
-//    match := regex.FindSubmatch([]byte("*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n"))
-//    fmt.Println("len", len(match))
-//    for i, v := range match {
-//        fmt.Println(i, "[" + string(v) + "]")
-//    }
-//
-//    fmt.Println("end")
-//    fmt.Println(regex.FindAllStringSubmatch("*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n", 0))
-	// You can use print statements as follows for debugging, they'll be visible when running tests.
-	fmt.Println("Logs from your program will appear here!")
-
+	fmt.Println("Starting")
 	 l, err := net.Listen("tcp", "0.0.0.0:6379")
 	 if err != nil {
 	 	fmt.Println("Failed to bind to port 6379")
 	 	os.Exit(1)
      }
      for {
-         var conn net.Conn
-         conn, err = l.Accept()
+         conn, err := l.Accept()
          if err != nil {
              fmt.Println("Error accepting connection: ", err.Error())
              os.Exit(1)
