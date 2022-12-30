@@ -6,10 +6,18 @@ import (
     "os"
     "io"
     "regexp"
+    "strings"
 )
 
+type expirable struct {
+    data [string]byte
+    expires bool
+    expiry int
+}
+
 // *2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n
-var regex = regexp.MustCompile(`^\*2\r\n\$\d+\r\n([a-zA-Z]+)\r\n\$\d+\r\n(.*)\r\n$`)
+var regex = regexp.MustCompile(`^\*\d\r\n(\$\d+\r\n(.+)\r\n)(\$\d+\r\n(.+)\r\n)(\$\d+\r\n(.+)\r\n)?(\$\d+\r\n(.+)\r\n)?(\$\d+\r\n(.+)\r\n)?$`)
+var m = make(map[[]byte][]byte)
 
 func main() {
 //    fmt.Println(make([]byte, 100)[:2])
@@ -18,9 +26,11 @@ func main() {
 //    fmt.Println(match[1])
 //    fmt.Println("end")
 //    fmt.Println("start")
-//    match = regex.FindSubmatch([]byte("*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n"))
-//    fmt.Println(match[1])
-//    fmt.Println(match[2])
+//    match := regex.FindSubmatch([]byte("*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n"))
+//    fmt.Println("len", len(match))
+//    for i, v := range match {
+//        fmt.Println(i, "[" + string(v) + "]")
+//    }
 //
 //    fmt.Println("end")
 //    fmt.Println(regex.FindAllStringSubmatch("*2\r\n$4\r\nECHO\r\n$3\r\nhey\r\n", 0))
@@ -34,13 +44,13 @@ func main() {
      }
      for {
          var conn net.Conn
-        conn, err = l.Accept()
-        if err != nil {
-            fmt.Println("Error accepting connection: ", err.Error())
-            os.Exit(1)
-        }
-        go handleConn(conn)
-    }
+         conn, err = l.Accept()
+         if err != nil {
+             fmt.Println("Error accepting connection: ", err.Error())
+             os.Exit(1)
+         }
+         go handleConn(conn)
+     }
 }
 
 func handleConn(conn net.Conn) {
@@ -55,23 +65,54 @@ func handleConn(conn net.Conn) {
             fmt.Println("Error reading from connection: ", err.Error())
             os.Exit(1)
         }
+
+        if buffer[0] != '*' || buffer[3] != '\r' {
+            fmt.Println("Unexpected value:", buffer)
+            return
+        }
+        if buffer[1] == 1 {
+            // PING
+            conn.Write([]byte("+PONG\r\n"))
+        } else {
+            var match = regex.FindSubmatch(buffer[:byteCount])
+            var command = string(match[2])
+            var first_arg = match[4];
+            if strings.EqualFold("echo", command) {
+                var send = append([]byte("+"), first_arg...)
+                send = append(send, []byte("\r\n")...)
+                conn.Write(send)
+            } else if string.EqualFold("set") {
+                var second_arg = match[6]
+                m[first_arg] = second_arg
+            } else if string.EqualFold("get") {
+
+                value, ok := m[first_arg]
+                if ok {
+                    sendPlainString(conn, value)
+                } else {
+                    conn.Write([]byte("$-1\r\n"))
+                }
+            }
+        }
 //        var string = string(buffer[:byteCount])
         var match = regex.FindSubmatch(buffer[:byteCount])
         fmt.Println(buffer)
         fmt.Println(string(buffer[:byteCount]))
-        
-        if len(match) > 0 {
 
-            var val = regex.FindSubmatch(buffer[:byteCount])[2]
-            var send = append([]byte("+"), val...)
-            send = append(send, []byte("\r\n")...)
-            conn.Write(send)
-        } else {
-
-            conn.Write([]byte("+PONG\r\n"))
-            
-        }
+//        if len(match) > 0 {
+//
+//        } else {
+//
+//            conn.Write([]byte("+PONG\r\n"))
+//
+//        }
     }
+}
+
+func sendPlainString(conn net.Conn, data []byte) {
+    var send = append([]byte("+"), first_arg...)
+    send = append(send, []byte("\r\n")...)
+    conn.Write(send)
 }
 
 //struct RedisCommand {
