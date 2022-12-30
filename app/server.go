@@ -49,7 +49,7 @@ func handleConn(conn net.Conn) {
             os.Exit(1)
         }
 
-        if buffer[0] != '*' || buffer[3] != '\r' {
+        if buffer[0] != '*' || buffer[2] != '\r' {
             fmt.Println("Unexpected value:", buffer)
             return
         }
