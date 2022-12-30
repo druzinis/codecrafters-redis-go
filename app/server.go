@@ -53,7 +53,7 @@ func handleConn(conn net.Conn) {
             fmt.Println("Unexpected value:", buffer)
             return
         }
-        if buffer[1] == 1 {
+        if buffer[1] == '1' {
             // PING
             conn.Write([]byte("+PONG\r\n"))
         } else {
